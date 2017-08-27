@@ -1,0 +1,67 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "F4uoVH+w5d7u7ZzTkkd5O7iluTY=",
+			"path": "github.com/prometheus/client_golang/prometheus",
+			"revision": "3eb912b336976e0f66a5eb9a434adfbba8dff646",
+			"revisionTime": "2017-08-25T16:06:44Z"
+		},
+		{
+			"checksumSHA1": "jYpLEs+wZ5LZubvOJEDSQ8I14MI=",
+			"path": "github.com/prometheus/common/log",
+			"revision": "61f87aac8082fa8c3c5655c7608d7478d46ac2ad",
+			"revisionTime": "2017-07-31T11:42:04Z"
+		},
+		{
+			"checksumSHA1": "91KYK0SpvkaMJJA2+BcxbVnyRO0=",
+			"path": "github.com/prometheus/common/version",
+			"revision": "61f87aac8082fa8c3c5655c7608d7478d46ac2ad",
+			"revisionTime": "2017-07-31T11:42:04Z"
+		},
+		{
+			"checksumSHA1": "BYvROBsiyAXK4sq6yhDe8RgT4LM=",
+			"path": "github.com/sirupsen/logrus",
+			"revision": "89742aefa4b206dcf400792f3bd35b542998eb3b",
+			"revisionTime": "2017-08-22T13:27:46Z"
+		},
+		{
+			"checksumSHA1": "nqWNlnMmVpt628zzvyo6Yv2CX5Q=",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "81e90905daefcd6fd217b62423c0908922eadb30",
+			"revisionTime": "2017-08-25T20:24:07Z"
+		},
+		{
+			"checksumSHA1": "7NuioK0dEzBI+OOdVzTARrHsXgI=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "2d6f6f883a06fc0d5f4b14a81e4c28705ea64c15",
+			"revisionTime": "2017-08-25T18:47:02Z"
+		},
+		{
+			"checksumSHA1": "gVfCD++7aVcdKF2spv6XkEM/wYw=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "2d6f6f883a06fc0d5f4b14a81e4c28705ea64c15",
+			"revisionTime": "2017-08-25T18:47:02Z"
+		},
+		{
+			"checksumSHA1": "ZdFZFaXmCgEEaEhVPkyXrnhKhsg=",
+			"path": "golang.org/x/sys/windows/registry",
+			"revision": "2d6f6f883a06fc0d5f4b14a81e4c28705ea64c15",
+			"revisionTime": "2017-08-25T18:47:02Z"
+		},
+		{
+			"checksumSHA1": "uVlUSSKplihZG7N+QJ6fzDZ4Kh8=",
+			"path": "golang.org/x/sys/windows/svc/eventlog",
+			"revision": "2d6f6f883a06fc0d5f4b14a81e4c28705ea64c15",
+			"revisionTime": "2017-08-25T18:47:02Z"
+		},
+		{
+			"checksumSHA1": "3SZTatHIy9OTKc95YlVfXKnoySg=",
+			"path": "gopkg.in/alecthomas/kingpin.v2",
+			"revision": "1087e65c9441605df944fb12c33f0fe7072d18ca",
+			"revisionTime": "2017-07-27T04:22:29Z"
+		}
+	],
+	"rootPath": "github.com/pzinovkin/nexmo_exporter"
+}
