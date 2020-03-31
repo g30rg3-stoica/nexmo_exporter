@@ -29,8 +29,9 @@ type Exporter struct {
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(key, secret string, timeout time.Duration) (*Exporter, error) {
-	uri := "https://rest.nexmo.com/account/get-balance/" + key + "/" + secret
+func NewExporter(apiUrl, key, secret string, timeout time.Duration) (*Exporter, error) {
+	uri := apiUrl + "/account/get-balance/" + key + "/" + secret
+
 	return &Exporter{
 		URI:    uri,
 		client: http.Client{Timeout: timeout},
@@ -127,18 +128,27 @@ func main() {
 			"web.listen-address",
 			"Address to listen on for web interface and telemetry.",
 		).Default(":9101").String()
+
 		metricsPath = kingpin.Flag(
 			"web.telemetry-path",
 			"Path under which to expose metrics.",
 		).Default("/metrics").String()
+
+		nexmoApiUrl = kingpin.Flag(
+			"nexmo.url",
+			"Nemo API URL",
+		).Default("https://rest.nexmo.com").String()
+
 		nexmoAPIKey = kingpin.Flag(
 			"nexmo.api-key",
 			"Path under which to expose metrics.",
 		).Default("").String()
+
 		nexmoAPISecret = kingpin.Flag(
 			"nexmo.api-secret",
 			"Path under which to expose metrics.",
 		).Default("").String()
+
 		nexmoTimeout = kingpin.Flag(
 			"nexmo.timeout",
 			"Timeout for trying to get stats from Nexmo.",
@@ -146,11 +156,11 @@ func main() {
 	)
 
 	log.AddFlags(kingpin.CommandLine)
-	kingpin.Version(version.Print("haproxy_exporter"))
+	kingpin.Version(version.Print("haproxy_exporter")) // FIXME: whats up with this
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	exporter, err := NewExporter(*nexmoAPIKey, *nexmoAPISecret, *nexmoTimeout)
+	exporter, err := NewExporter(*nexmoApiUrl, *nexmoAPIKey, *nexmoAPISecret, *nexmoTimeout)
 	if err != nil {
 		log.Fatal(err)
 	}
