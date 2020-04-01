@@ -11,7 +11,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
-	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -181,7 +180,7 @@ func main() {
 	)
 
 	log.AddFlags(kingpin.CommandLine)
-	kingpin.Version(version.Print("haproxy_exporter")) // FIXME: whats up with this
+	kingpin.Version("0.1.0") // FIXME: parameterize this
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
@@ -204,7 +203,7 @@ func main() {
 	}
 
 	prometheus.MustRegister(exporter)
-	prometheus.MustRegister(version.NewCollector("nexmo_exporter"))
+	prometheus.MustRegister(prometheus.NewBuildInfoCollector())
 
 	log.Infoln("Listening on", *telemetryPort)
 
