@@ -9,12 +9,10 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
-	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
-
-const namespace = "nexmo"
 
 // Exporter collects Nexmo stats and exports them using
 // the prometheus metrics package.
@@ -29,8 +27,9 @@ type Exporter struct {
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(key, secret string, timeout time.Duration) (*Exporter, error) {
-	uri := "https://rest.nexmo.com/account/get-balance/" + key + "/" + secret
+func NewExporter(apiUrl, key, secret, namespace string, timeout time.Duration) (*Exporter, error) {
+	uri := apiUrl + "/account/get-balance/" + key + "/" + secret
+
 	return &Exporter{
 		URI:    uri,
 		client: http.Client{Timeout: timeout},
@@ -51,6 +50,8 @@ func NewExporter(key, secret string, timeout time.Duration) (*Exporter, error) {
 		}),
 	}, nil
 }
+
+/* Prometheus ingerface implementation */
 
 // Describe describes all the metrics. Implements prometheus.Collector.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
@@ -86,6 +87,8 @@ func (e *Exporter) scrape() {
 	e.up.Set(1)
 }
 
+/* Nexmo API client implementation */
+
 type balanceResp struct {
 	Value      float64 `json:"value"`
 	AutoReload bool    `json:"autoReload"`
@@ -120,45 +123,91 @@ func (e *Exporter) getBalance() (float64, error) {
 	return balance.Value, nil
 }
 
+/* Misc */
+
+/* Data structure to hold Nexmo API credentials */
+type APICredentials struct {
+	APIKey    string
+	APISecret string
+}
+
+/*
+* Retrieves API key - API secret tuple from file or error
+ */
+func readAPIAuthCredentials() (APICredentials, error) {
+	jsonData, err := ioutil.ReadFile("/app/credentials/nexmo.json")
+
+	if err != nil {
+		log.Fatal("Failed to read API credentials: ", err)
+
+		return APICredentials{}, err
+	}
+
+	var credentialsData APICredentials
+	json.Unmarshal(jsonData, &credentialsData)
+
+	return credentialsData, nil
+
+}
+
 func main() {
 
 	var (
-		listenAddress = kingpin.Flag(
-			"web.listen-address",
-			"Address to listen on for web interface and telemetry.",
-		).Default(":9101").String()
+		telemetryPort = kingpin.Flag(
+			"web.telemetry-port",
+			"Port to listen on for web interface and telemetry.",
+		).Default(":9100").String()
+
 		metricsPath = kingpin.Flag(
 			"web.telemetry-path",
 			"Path under which to expose metrics.",
 		).Default("/metrics").String()
-		nexmoAPIKey = kingpin.Flag(
-			"nexmo.api-key",
-			"Path under which to expose metrics.",
-		).Default("").String()
-		nexmoAPISecret = kingpin.Flag(
-			"nexmo.api-secret",
-			"Path under which to expose metrics.",
-		).Default("").String()
+
+		nexmoApiUrl = kingpin.Flag(
+			"nexmo.url",
+			"Nemo API URL",
+		).Default("https://rest.nexmo.com").String()
+
 		nexmoTimeout = kingpin.Flag(
 			"nexmo.timeout",
 			"Timeout for trying to get stats from Nexmo.",
 		).Default("5s").Duration()
+
+		nexmoNamespace = kingpin.Flag(
+			"nexmo.namespace",
+			"Prometheus namespace for Nexmo metrics",
+		).Default("nexmo").String()
 	)
 
 	log.AddFlags(kingpin.CommandLine)
-	kingpin.Version(version.Print("haproxy_exporter"))
+	kingpin.Version("0.1.0") // FIXME: parameterize this
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	exporter, err := NewExporter(*nexmoAPIKey, *nexmoAPISecret, *nexmoTimeout)
+	// read API authentication credentials
+	apiCredentials, err := readAPIAuthCredentials()
+
+	if err != nil {
+		panic(err)
+	}
+
+	exporter, err := NewExporter(*nexmoApiUrl,
+		apiCredentials.APIKey,
+		apiCredentials.APISecret,
+		*nexmoNamespace,
+		*nexmoTimeout,
+	)
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	prometheus.MustRegister(exporter)
-	prometheus.MustRegister(version.NewCollector("nexmo_exporter"))
 
-	log.Infoln("Listening on", *listenAddress)
-	http.Handle(*metricsPath, prometheus.Handler())
+	prometheus.MustRegister(exporter)
+	prometheus.MustRegister(prometheus.NewBuildInfoCollector())
+
+	log.Infoln("Listening on", *telemetryPort)
+
+	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
              <head><title>Nexmo Exporter</title></head>
@@ -168,5 +217,5 @@ func main() {
              </body>
              </html>`))
 	})
-	log.Fatal(http.ListenAndServe(*listenAddress, nil))
+	log.Fatal(http.ListenAndServe(*telemetryPort, nil))
 }
