@@ -53,6 +53,8 @@ func NewExporter(apiUrl, key, secret string, timeout time.Duration) (*Exporter, 
 	}, nil
 }
 
+/* Prometheus ingerface implementation */
+
 // Describe describes all the metrics. Implements prometheus.Collector.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.up.Desc()
@@ -86,6 +88,8 @@ func (e *Exporter) scrape() {
 	e.balance.Set(balance)
 	e.up.Set(1)
 }
+
+/* Nexmo API client implementation */
 
 type balanceResp struct {
 	Value      float64 `json:"value"`
@@ -121,6 +125,33 @@ func (e *Exporter) getBalance() (float64, error) {
 	return balance.Value, nil
 }
 
+/* Misc */
+
+/* Data structure to hold Nexmo API credentials */
+type APICredentials struct {
+	APIKey    string
+	APISecret string
+}
+
+/*
+* Retrieves API key - API secret tuple from file or error
+ */
+func readAPIAuthCredentials() (APICredentials, error) {
+	jsonData, err := ioutil.ReadFile("/nexmo/credentials.json")
+
+	if err != nil {
+		log.Fatal("Failed to read API credentials.")
+
+		return APICredentials{}, err
+	}
+
+	var credentialsData APICredentials
+	json.Unmarshal(jsonData, &credentialsData)
+
+	return credentialsData, nil
+
+}
+
 func main() {
 
 	var (
@@ -139,16 +170,6 @@ func main() {
 			"Nemo API URL",
 		).Default("https://rest.nexmo.com").String()
 
-		nexmoAPIKey = kingpin.Flag(
-			"nexmo.api-key",
-			"Path under which to expose metrics.",
-		).Default("").String()
-
-		nexmoAPISecret = kingpin.Flag(
-			"nexmo.api-secret",
-			"Path under which to expose metrics.",
-		).Default("").String()
-
 		nexmoTimeout = kingpin.Flag(
 			"nexmo.timeout",
 			"Timeout for trying to get stats from Nexmo.",
@@ -160,10 +181,19 @@ func main() {
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	exporter, err := NewExporter(*nexmoApiUrl, *nexmoAPIKey, *nexmoAPISecret, *nexmoTimeout)
+	// read API authentication credentials
+	apiCredentials, err := readAPIAuthCredentials()
+
+	if err != nil {
+		panic(err)
+	}
+
+	exporter, err := NewExporter(*nexmoApiUrl, apiCredentials.APIKey, apiCredentials.APISecret, *nexmoTimeout)
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	prometheus.MustRegister(exporter)
 	prometheus.MustRegister(version.NewCollector("nexmo_exporter"))
 
