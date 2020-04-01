@@ -15,8 +15,6 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-const namespace = "nexmo"
-
 // Exporter collects Nexmo stats and exports them using
 // the prometheus metrics package.
 type Exporter struct {
@@ -30,7 +28,7 @@ type Exporter struct {
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(apiUrl, key, secret string, timeout time.Duration) (*Exporter, error) {
+func NewExporter(apiUrl, key, secret, namespace string, timeout time.Duration) (*Exporter, error) {
 	uri := apiUrl + "/account/get-balance/" + key + "/" + secret
 
 	return &Exporter{
@@ -138,10 +136,10 @@ type APICredentials struct {
 * Retrieves API key - API secret tuple from file or error
  */
 func readAPIAuthCredentials() (APICredentials, error) {
-	jsonData, err := ioutil.ReadFile("/nexmo/credentials.json")
+	jsonData, err := ioutil.ReadFile("/app/credentials/nexmo.json")
 
 	if err != nil {
-		log.Fatal("Failed to read API credentials.")
+		log.Fatal("Failed to read API credentials: ", err)
 
 		return APICredentials{}, err
 	}
@@ -156,10 +154,10 @@ func readAPIAuthCredentials() (APICredentials, error) {
 func main() {
 
 	var (
-		listenAddress = kingpin.Flag(
-			"web.listen-address",
-			"Address to listen on for web interface and telemetry.",
-		).Default(":9101").String()
+		telemetryPort = kingpin.Flag(
+			"web.telemetry-port",
+			"Port to listen on for web interface and telemetry.",
+		).Default(":9100").String()
 
 		metricsPath = kingpin.Flag(
 			"web.telemetry-path",
@@ -175,6 +173,11 @@ func main() {
 			"nexmo.timeout",
 			"Timeout for trying to get stats from Nexmo.",
 		).Default("5s").Duration()
+
+		nexmoNamespace = kingpin.Flag(
+			"nexmo.namespace",
+			"Prometheus namespace for Nexmo metrics",
+		).Default("nexmo").String()
 	)
 
 	log.AddFlags(kingpin.CommandLine)
@@ -189,7 +192,12 @@ func main() {
 		panic(err)
 	}
 
-	exporter, err := NewExporter(*nexmoApiUrl, apiCredentials.APIKey, apiCredentials.APISecret, *nexmoTimeout)
+	exporter, err := NewExporter(*nexmoApiUrl,
+		apiCredentials.APIKey,
+		apiCredentials.APISecret,
+		*nexmoNamespace,
+		*nexmoTimeout,
+	)
 
 	if err != nil {
 		log.Fatal(err)
@@ -198,7 +206,7 @@ func main() {
 	prometheus.MustRegister(exporter)
 	prometheus.MustRegister(version.NewCollector("nexmo_exporter"))
 
-	log.Infoln("Listening on", *listenAddress)
+	log.Infoln("Listening on", *telemetryPort)
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -210,5 +218,5 @@ func main() {
              </body>
              </html>`))
 	})
-	log.Fatal(http.ListenAndServe(*listenAddress, nil))
+	log.Fatal(http.ListenAndServe(*telemetryPort, nil))
 }
